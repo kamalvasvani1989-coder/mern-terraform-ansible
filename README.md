@@ -388,3 +388,14 @@ After teardown, the `terraform-mern` IAM user's access key is deactivated.
 | 23b | [logins denied](docs/screenshots/23b-ssh-login-denied.png) | root and password logins rejected, port 3001 closed |
 | 24 | [fail2ban](docs/screenshots/24-fail2ban.png) | sshd jail active on both hosts |
 | 25 | [idempotency](docs/screenshots/25-idempotency-changed-0.png) | repeat `site.yml` run: `changed=0` |
+
+---
+
+## 12. Rebuild and teardown (lifecycle scripts)
+
+| Command | What it does |
+|---|---|
+| `./up.sh` | Refreshes the admin IP, runs `terraform apply`, clears stale SSH host keys, generates the inventory, waits for SSH, runs `site.yml` and prints the app URL. Safe to re-run. |
+| `./down.sh` | Runs `terraform destroy`, then queries AWS for leftover NAT Gateways, Elastic IPs and instances tagged `Project=mern-tf`, and fails loudly if anything billable remains. |
+
+Persistent state lives outside AWS: the code in git, the SSH key, the vault password file and the AWS CLI profile. The whole environment can therefore be destroyed when idle and rebuilt in about 15 minutes, so the NAT Gateway is billed only while the environment is actually in use. Application data in MongoDB does not survive a teardown.
