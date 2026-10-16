@@ -325,9 +325,9 @@ cd terraform && terraform destroy
 
 After teardown, the `terraform-mern` IAM user's access key is deactivated.
 
-<!-- After running terraform destroy, add docs/screenshots/26-terraform-destroy.png and uncomment:
+After running terraform destroy, add docs/screenshots/26-terraform-destroy.png and uncomment:
 ![terraform destroy](docs/screenshots/26-terraform-destroy.png)
--->
+
 
 ---
 
@@ -388,6 +388,7 @@ After teardown, the `terraform-mern` IAM user's access key is deactivated.
 | 23b | [logins denied](docs/screenshots/23b-ssh-login-denied.png) | root and password logins rejected, port 3001 closed |
 | 24 | [fail2ban](docs/screenshots/24-fail2ban.png) | sshd jail active on both hosts |
 | 25 | [idempotency](docs/screenshots/25-idempotency-changed-0.png) | repeat `site.yml` run: `changed=0` |
+| 26 | [terraform destroy](docs/screenshots/26-terraform-destroy.png) | Destroy Terraform |
 
 ---
 
