@@ -1,0 +1,7 @@
+app_repo: https://github.com/UnpredictablePrashant/TravelMemory.git
+app_user: travelmemory
+app_home: /opt/travelmemory
+app_dir: /opt/travelmemory/app
+web_root: /var/www/travelmemory
+backend_port: 3001
+node_major: 22

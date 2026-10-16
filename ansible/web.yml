@@ -1,0 +1,5 @@
+- name: Configure web server and deploy TravelMemory
+  hosts: webservers
+  become: true
+  roles:
+    - web
