@@ -1,0 +1,5 @@
+mongo_admin_user: admin
+mongo_admin_password: "{{ vault_mongo_admin_password }}"
+mongo_app_db: travelmemory
+mongo_app_user: tmapp
+mongo_app_password: "{{ vault_mongo_app_password }}"

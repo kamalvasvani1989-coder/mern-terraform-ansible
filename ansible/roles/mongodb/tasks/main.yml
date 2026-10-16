@@ -1,0 +1,85 @@
+- name: Install prerequisites
+  ansible.builtin.apt:
+    name: [gnupg, curl]
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Ensure apt keyrings directory exists
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: "0755"
+
+- name: Add MongoDB 8.0 signing key
+  ansible.builtin.get_url:
+    url: https://www.mongodb.org/static/pgp/server-8.0.asc
+    dest: /etc/apt/keyrings/mongodb-server-8.0.asc
+    mode: "0644"
+
+- name: Add MongoDB 8.0 apt repository
+  ansible.builtin.apt_repository:
+    repo: "deb [arch=amd64 signed-by=/etc/apt/keyrings/mongodb-server-8.0.asc] https://repo.mongodb.org/apt/ubuntu noble/mongodb-org/8.0 multiverse"
+    filename: mongodb-org-8.0
+    state: present
+
+- name: Install MongoDB
+  ansible.builtin.apt:
+    name: mongodb-org
+    state: present
+    update_cache: true
+
+- name: Apply kernel 6.19+ compatibility workaround
+  ansible.builtin.import_tasks: kernel_workaround.yml
+
+- name: Deploy hardened mongod.conf
+  ansible.builtin.template:
+    src: mongod.conf.j2
+    dest: /etc/mongod.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: restart mongod
+
+- name: Start and enable mongod
+  ansible.builtin.systemd:
+    name: mongod
+    state: started
+    enabled: true
+
+- name: Apply config changes now
+  ansible.builtin.meta: flush_handlers
+
+- name: Wait for MongoDB to accept connections
+  ansible.builtin.wait_for:
+    host: 127.0.0.1
+    port: 27017
+    timeout: 60
+
+- name: Check whether admin user already exists
+  ansible.builtin.command: >
+    mongosh admin --quiet -u {{ mongo_admin_user }} -p {{ mongo_admin_password }}
+    --eval "db.runCommand({ping:1}).ok"
+  register: admin_check
+  failed_when: false
+  changed_when: false
+  no_log: true
+
+- name: Create admin user (localhost exception, first run only)
+  ansible.builtin.command: >
+    mongosh admin --quiet --eval
+    'db.createUser({user: "{{ mongo_admin_user }}", pwd: "{{ mongo_admin_password }}", roles: ["root"]})'
+  when: admin_check.rc != 0
+  no_log: true
+
+- name: Create least-privilege application user
+  ansible.builtin.command: >
+    mongosh admin --quiet -u {{ mongo_admin_user }} -p {{ mongo_admin_password }} --eval
+    'const d = db.getSiblingDB("{{ mongo_app_db }}");
+    if (!d.getUser("{{ mongo_app_user }}")) {
+    d.createUser({user: "{{ mongo_app_user }}", pwd: "{{ mongo_app_password }}",
+    roles: [{role: "readWrite", db: "{{ mongo_app_db }}"}]}); print("created") }
+    else { print("exists") }'
+  register: app_user
+  changed_when: "'created' in app_user.stdout"
+  no_log: true

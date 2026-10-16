@@ -1,0 +1,16 @@
+# MongoDB 8.x bundled TCMalloc crashes on Linux kernel >= 6.19
+# Ref: https://jira.mongodb.org/browse/SERVER-121912
+- name: Create mongod systemd drop-in directory
+  ansible.builtin.file:
+    path: /etc/systemd/system/mongod.service.d
+    state: directory
+    mode: "0755"
+
+- name: Set GLIBC_TUNABLES rseq workaround for kernel 6.19+
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/mongod.service.d/rseq-workaround.conf
+    mode: "0644"
+    content: |
+      [Service]
+      Environment="GLIBC_TUNABLES=glibc.pthread.rseq=1"
+  notify: restart mongod

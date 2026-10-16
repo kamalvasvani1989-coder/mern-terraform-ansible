@@ -8,10 +8,10 @@ DB_IP=$(terraform -chdir=../terraform output -raw db_private_ip)
 KEY=~/.ssh/mern-tf
 
 cat > inventory.ini <<EOF
-[web]
+[webservers]
 web ansible_host=${WEB_IP}
 
-[db]
+[dbservers]
 db ansible_host=${DB_IP} ansible_ssh_common_args='-o ProxyCommand="ssh -i ${KEY} -o StrictHostKeyChecking=accept-new -W %h:%p -q ubuntu@${WEB_IP}"'
 
 [all:vars]
