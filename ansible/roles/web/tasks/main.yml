@@ -62,10 +62,17 @@
   ansible.builtin.git:
     repo: "{{ app_repo }}"
     dest: "{{ app_dir }}"
-    force: true
+    force: false
   become_user: "{{ app_user }}"
   register: repo
   notify: restart backend
+
+- name: Keep local url.js override out of git change detection
+  ansible.builtin.command: git update-index --skip-worktree frontend/src/url.js
+  args:
+    chdir: "{{ app_dir }}"
+  become_user: "{{ app_user }}"
+  changed_when: false
 
 # ---------- Backend ----------
 - name: Write backend .env from vault

@@ -1,0 +1,5 @@
+- name: Security hardening for all servers
+  hosts: all
+  become: true
+  roles:
+    - hardening

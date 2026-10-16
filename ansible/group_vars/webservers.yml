@@ -1,0 +1,4 @@
+ufw_rules:
+  - { port: "22",  src: "any", comment: "SSH (SG restricts to admin IP)" }
+  - { port: "80",  src: "any", comment: "HTTP" }
+  - { port: "443", src: "any", comment: "HTTPS" }

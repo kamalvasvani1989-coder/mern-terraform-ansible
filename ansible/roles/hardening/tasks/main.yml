@@ -1,0 +1,74 @@
+- name: Install security packages
+  ansible.builtin.apt:
+    name: [ufw, fail2ban, unattended-upgrades]
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+# ---------- SSH ----------
+- name: Deploy SSH hardening drop-in
+  ansible.builtin.copy:
+    src: 00-hardening.conf
+    dest: /etc/ssh/sshd_config.d/00-hardening.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: restart ssh
+
+- name: Validate sshd configuration
+  ansible.builtin.command: sshd -t
+  changed_when: false
+
+# ---------- Firewall (allow rules first, then enable) ----------
+- name: UFW allow rules
+  community.general.ufw:
+    rule: allow
+    port: "{{ item.port }}"
+    proto: tcp
+    src: "{{ item.src }}"
+    comment: "{{ item.comment }}"
+  loop: "{{ ufw_rules }}"
+
+- name: UFW default deny incoming
+  community.general.ufw:
+    default: deny
+    direction: incoming
+
+- name: UFW default allow outgoing
+  community.general.ufw:
+    default: allow
+    direction: outgoing
+
+- name: Enable UFW with logging
+  community.general.ufw:
+    state: enabled
+    logging: "on"
+
+# ---------- fail2ban ----------
+- name: Enable fail2ban sshd jail
+  ansible.builtin.copy:
+    dest: /etc/fail2ban/jail.d/sshd.local
+    mode: "0644"
+    content: |
+      [sshd]
+      enabled  = true
+      backend  = systemd
+      maxretry = 5
+      findtime = 10m
+      bantime  = 1h
+  notify: restart fail2ban
+
+- name: Ensure fail2ban running
+  ansible.builtin.systemd:
+    name: fail2ban
+    state: started
+    enabled: true
+
+# ---------- Automatic security updates ----------
+- name: Enable unattended security upgrades
+  ansible.builtin.copy:
+    dest: /etc/apt/apt.conf.d/20auto-upgrades
+    mode: "0644"
+    content: |
+      APT::Periodic::Update-Package-Lists "1";
+      APT::Periodic::Unattended-Upgrade "1";
